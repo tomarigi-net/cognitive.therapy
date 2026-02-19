@@ -94,15 +94,15 @@
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                const response = await fetch('https://cognitive-therapy.onrender.com/analyze', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    // 変数名を thought に統一しました
-                    body: JSON.stringify({ thought: thought })
-                });
 
+
+const response = await fetch('https://cognitive-therapy.onrender.com/', { // analyzeを消して最後に / をつける
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ thought: thought })
+});
                 if (!response.ok) throw new Error('サーバーとの通信に失敗しました');
                 
                 const data = await response.json();
