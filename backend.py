@@ -59,5 +59,9 @@ def home():
     return "CBT Backend is running (Ultimate Mode)!"
 
 if __name__ == '__main__':
+    # Renderから割り当てられるポート番号を取得（デフォルトは5000）
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    
+    # debug=False にすることで、本番環境での安定性を高めます
+    # host="0.0.0.0" は必須です
+    app.run(host="0.0.0.0", port=port, debug=False)
