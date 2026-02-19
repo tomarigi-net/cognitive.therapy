@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mint CBT - AI Partner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --mint-primary: #f0fff4; --mint-dark: #3e8e7e; --mint-accent: #10b981; }
+        body { background-color: #f7fafc; color: #334155; }
+        .mint-bg { background-color: var(--mint-primary); }
+        .step-card { display: none; animation: fadeIn 0.5s ease forwards; }
+        .step-card.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .distortion-chip { transition: all 0.3s; border: 1px solid #e2e8f0; font-size: 0.75rem; padding: 0.5rem; border-radius: 0.5rem; background: white; }
+        .highlight { border-color: var(--mint-accent); background-color: #ecfdf5; color: var(--mint-dark); font-weight: bold; transform: scale(1.03); }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-2xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-teal-800 tracking-tight">Mint CBT</h1>
+            <p class="text-teal-600/70 text-sm">AIカウンセラーが、あなたの心に寄り添います</p>
+        </header>
+
+        <div id="step-1" class="step-card active bg-white p-8 rounded-3xl shadow-sm border border-emerald-100">
+            <div class="mb-6">
+                <label class="block font-bold text-teal-900 mb-2">今の状況を教えてください</label>
+                <textarea id="thought" class="w-full mint-bg border-emerald-100 rounded-2xl p-4 h-32 focus:ring-2 focus:ring-emerald-400 outline-none transition" placeholder="例：仕事のミスを指摘された。みんな私を無能だと思っている気がする..."></textarea>
+            </div>
+            <div class="mb-8">
+                <label class="block font-bold text-teal-900 mb-2">今の苦しさは？ (0-100)</label>
+                <input type="range" id="before-score" class="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                <div class="text-center font-bold text-emerald-600 mt-2"><span id="before-val">50</span>%</div>
+            </div>
+            <button onclick="goToStep(2)" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg transition shadow-emerald-200">
+                AIに相談する
+            </button>
+        </div>
+
+        <div id="step-2" class="step-card bg-white p-8 rounded-3xl shadow-sm border border-emerald-100 text-center">
+            <h2 class="text-xl font-bold text-teal-900 mb-4">分析の結果、こんな「くせ」が見つかりました</h2>
+            <div id="distortion-grid" class="grid grid-cols-2 gap-2 mb-8 text-left">
+                <div id="d-1" class="distortion-chip">白黒思考</div>
+                <div id="d-2" class="distortion-chip">一般化のしすぎ</div>
+                <div id="d-3" class="distortion-chip">心のフィルター</div>
+                <div id="d-4" class="distortion-chip">マイナス思考化</div>
+                <div id="d-5" class="distortion-chip">結論の飛躍</div>
+                <div id="d-6" class="distortion-chip">拡大解釈・過小評価</div>
+                <div id="d-7" class="distortion-chip">感情的決めつけ</div>
+                <div id="d-8" class="distortion-chip">すべき思考</div>
+                <div id="d-9" class="distortion-chip">レッテル貼り</div>
+                <div id="d-10" class="distortion-chip">個人化</div>
+            </div>
+            <button onclick="goToStep(3)" class="w-full bg-slate-800 hover:bg-black text-white font-bold py-4 rounded-2xl transition">
+                アドバイスを読む
+            </button>
+        </div>
+
+        <div id="step-3" class="step-card space-y-4">
+            <div class="mint-bg p-6 rounded-3xl border border-emerald-200">
+                <h3 class="font-bold text-teal-900 mb-2 flex items-center">🌿 視点を変えてみましょう</h3>
+                <p id="refutation-text" class="text-slate-700 text-sm leading-relaxed"></p>
+            </div>
+            <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+                <h3 class="font-bold text-blue-900 mb-2 flex items-center">✨ 心の変化</h3>
+                <p id="benefit-text" class="text-slate-700 text-sm leading-relaxed"></p>
+            </div>
+            <div class="bg-amber-50 p-6 rounded-3xl border border-amber-100">
+                <h3 class="font-bold text-amber-900 mb-2 flex items-center">🏃‍♂️ 今日の一歩</h3>
+                <ul id="action-list" class="text-slate-700 text-sm space-y-2 list-disc ml-5 mt-2"></ul>
+            </div>
+            <button onclick="goToStep(4)" class="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg">
+                今の気持ちを確認する
+            </button>
+        </div>
+
+        <div id="step-4" class="step-card bg-white p-8 rounded-3xl shadow-sm border border-emerald-100 text-center">
+            <h2 class="text-xl font-bold text-teal-900 mb-4">お疲れ様でした。今の気分はどうですか？</h2>
+            <input type="range" id="after-score" class="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+            <div class="text-center font-bold text-emerald-600 mt-2 mb-8"><span id="after-val">50</span>%</div>
+            
+            <div id="result-message" class="p-4 bg-emerald-50 rounded-xl text-emerald-800 font-bold mb-6"></div>
+            
+            <button onclick="location.reload()" class="text-emerald-600 font-bold hover:underline">
+                もう一度、別のことを記録する
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // スライダー連動
+        document.getElementById('before-score').oninput = function() { document.getElementById('before-val').innerText = this.value; }
+        document.getElementById('after-score').oninput = function() { 
+            document.getElementById('after-val').innerText = this.value;
+            const diff = document.getElementById('before-score').value - this.value;
+            const msg = diff > 0 ? `${diff}%も心が軽くなりましたね！` : "少しずつ、自分のペースで大丈夫ですよ。";
+            document.getElementById('result-message').innerText = msg;
+        }
+
+        function goToStep(step) {
+            document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+            document.getElementById('step-' + step).classList.add('active');
+            
+            if(step === 2) simulateAIAnalysis();
+        }
+
+        function simulateAIAnalysis() {
+            async function analyzeThought() {
+    const thoughtText = document.getElementById('thought').value;
+    if (!thoughtText) return alert("まずは気持ちを書き出してみましょう。");
+
+    document.getElementById('prescription').classList.add('hidden');
+    document.getElementById('ai-loading').classList.remove('hidden');
+
+    try {
+        // Pythonサーバー(Flask)にデータを送る
+        const response = await fetch('http://localhost:5000/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ thought: thoughtText })
+        });
+
+        const data = await response.json();
+
+        // 1. 認知の歪みのハイライトを更新
+        const chips = document.querySelectorAll('.distortion-chip');
+        chips.forEach(c => c.classList.remove('highlight', 'dimmed'));
+        
+        // 10のリストのテキストと一致するものを光らせる
+        chips.forEach(chip => {
+            const name = chip.innerText.split('. ')[1] || chip.innerText;
+            if (data.distortions.includes(name)) {
+                chip.classList.add('highlight');
+            } else {
+                chip.classList.add('dimmed');
+            }
+        });
+
+        // 2. テキストを流し込む
+        document.getElementById('refutation-text').innerText = data.refutation;
+        document.getElementById('benefit-text').innerText = data.benefit;
+        
+        const actionList = document.getElementById('action-list');
+        actionList.innerHTML = data.actions.map(a => `<li>${a}</li>`).join('');
+
+        // 画面遷移
+        document.getElementById('ai-loading').classList.add('hidden');
+        document.getElementById('prescription').classList.remove('hidden');
+        document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active'));
+        document.getElementById('step-3').classList.add('active');
+
+    } catch (error) {
+        alert("サーバーとの通信に失敗しました。Pythonプログラムが動いているか確認してください。");
+    }
+}
+        }
+    </script>
+</body>
+</html>
