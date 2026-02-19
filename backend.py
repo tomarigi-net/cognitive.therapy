@@ -18,7 +18,24 @@ if not api_key:
 else:
     genai.configure(api_key=api_key)
 
-model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+model = genai.GenerativeModel('gemini-1.5-flash') # シンプルな名前に戻す
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    data = request.json
+    user_thought = data.get('thought', '')
+
+    try:
+        # 強制的にJSONモードで動かす最新の書き方
+        response = model.generate_content(
+            f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}",
+            generation_config={"response_mime_type": "application/json"}
+        )
+        
+        return jsonify(json.loads(response.text))
+    except Exception as e:
+        print(f"Serious Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # 2. システム指示文 (プロンプト)
 SYSTEM_PROMPT = """
