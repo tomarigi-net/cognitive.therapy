@@ -7,7 +7,6 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# prompt.txt読み込み関数
 def get_prompt():
     try:
         path = os.path.join(os.path.dirname(__file__), "prompt.txt")
@@ -20,28 +19,26 @@ def get_prompt():
 
 SYSTEM_PROMPT = get_prompt()
 
-# POST と OPTIONS を明示的に許可します
-@app.route('/', methods=['GET', 'POST', 'OPTIONS'])
+# スラッシュあり・なしの両方を定義して404を物理的に防ぐ
+@app.route('/', methods=['GET', 'POST', 'OPTIONS'], strict_slashes=False)
+@app.route('', methods=['POST', 'OPTIONS'], strict_slashes=False)
 def home():
     if request.method == 'OPTIONS':
         return '', 200
     
-    # GETリクエストなら生存確認メッセージを返す
     if request.method == 'GET':
         return "CBT Backend is Online"
 
-    # POSTリクエストならAI分析を実行する
+    # POST処理
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
     try:
         data = request.get_json()
-        thought = data.get('thought', '')
+        thought = data.get('thought', '入力なし')
 
         payload = {
-            "contents": [{
-                "parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザーの思考: {thought}"}]
-            }]
+            "contents": [{"parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザーの思考: {thought}"}]}]
         }
 
         response = requests.post(url, params={"key": api_key}, json=payload, timeout=25)
