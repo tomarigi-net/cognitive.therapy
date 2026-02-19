@@ -1,154 +1,65 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ココロの整理 - CBTアシスタント</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* いろはミントグリーン基調のカスタムカラー */
-        :root {
-            --mint-main: #e6f7f3;
-            --mint-accent: #4fd1c5;
-            --mint-dark: #2d3748;
-        }
-        body { background-color: #f0fdfa; color: var(--mint-dark); }
-        .mint-card { background: white; border: 1px solid #ccf2e9; border-radius: 1.5rem; }
-        .distortion-tag {
-            background-color: #fef2f2;
-            color: #ef4444;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            font-weight: bold;
-            font-size: 0.875rem;
-            border: 1px solid #fee2e2;
-        }
-        /* スライダーの見た目カスタマイズ */
-        input[type=range] { font-size: 1.5rem; width: 100%; cursor: pointer; }
-    </style>
-</head>
-<body class="min-h-screen pb-12">
+<script>
+    async function analyzeThought() {
+        // ここで 'thought' という名前で定義しています
+        const thought = document.getElementById('user-thought').value;
+        const belief = document.getElementById('belief-range').value;
+        if (!thought) return alert('今の気持ちを入力してください');
 
-    <div class="max-w-2xl mx-auto px-4 py-10">
-        <header class="text-center mb-10">
-            <h1 class="text-3xl font-bold text-teal-800">ココロの整理</h1>
-            <p class="text-teal-600 mt-2">あなたの思考を、少しだけ客観的に。</p>
-        </header>
+        document.getElementById('input-section').classList.add('hidden');
+        document.getElementById('loading').classList.remove('hidden');
 
-        <div id="input-section" class="mint-card shadow-sm p-8 space-y-6">
-            <div>
-                <label class="block text-lg font-semibold mb-3">1. 今、頭に浮かんでいることは？</label>
-                <textarea id="user-thought" class="w-full h-32 p-4 border border-teal-100 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent outline-none bg-teal-50/30 transition" placeholder="例：会議で発言をスルーされた。私は価値がない人間なんだ。"></textarea>
-            </div>
+        try {
+            const response = await fetch('https://cognitive-therapy.onrender.com/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // 変数名を 'thought' に修正しました
+                body: JSON.stringify({ thought: thought })
+            });
 
-            <div>
-                <label class="block text-lg font-semibold mb-1">2. その考えをどのくらい信じていますか？</label>
-                <div class="flex items-center gap-4">
-                    <input type="range" id="belief-range" min="0" max="100" value="50" class="accent-teal-500" oninput="document.getElementById('range-val').innerText = this.value + '%'">
-                    <span id="range-val" class="text-2xl font-bold text-teal-600 w-16">50%</span>
-                </div>
-            </div>
+            if (!response.ok) throw new Error('サーバーでエラーが起きました');
+            
+            const data = await response.json();
+            displayResults(data);
 
-            <button onclick="analyzeThought()" id="submit-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-teal-100 text-lg">
-                心を分析する
-            </button>
-        </div>
-
-        <div id="loading" class="hidden text-center py-16">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
-            <p class="mt-6 text-teal-700 font-medium">AIカウンセラーが分析しています...</p>
-        </div>
-
-        <div id="result-section" class="hidden space-y-6 mt-8">
-            <div class="mint-card p-6 shadow-sm">
-                <h3 class="text-xs font-bold text-teal-400 uppercase tracking-widest mb-4">見つかった認知の歪み</h3>
-                <div id="distortion-list" class="flex flex-wrap gap-2"></div>
-            </div>
-
-            <div class="bg-teal-500 text-white rounded-3xl p-8 shadow-md">
-                <h3 class="text-teal-100 text-sm font-bold uppercase mb-2">新しい視点（反論）</h3>
-                <p id="refutation-text" class="text-xl leading-relaxed font-medium"></p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white border border-teal-100 rounded-2xl p-5">
-                    <h3 class="font-bold text-teal-600 mb-2 flex items-center">💡 メリット</h3>
-                    <p id="benefit-text" class="text-slate-600 text-sm leading-relaxed"></p>
-                </div>
-                <div class="bg-white border border-teal-100 rounded-2xl p-5">
-                    <h3 class="font-bold text-teal-600 mb-2 flex items-center">🚀 アクション</h3>
-                    <ul id="action-list" class="list-disc list-inside text-slate-600 text-sm space-y-1"></ul>
-                </div>
-            </div>
-
-            <button onclick="location.reload()" class="w-full py-4 text-teal-500 hover:text-teal-700 font-medium transition">
-                ← 別のことを相談する
-            </button>
-        </div>
-    </div>
-
-    <script>
-        async function analyzeThought() {
-            const thought = document.getElementById('user-thought').value;
-            const belief = document.getElementById('belief-range').value;
-            if (!thought) return alert('今の気持ちを入力してください');
-
-            document.getElementById('input-section').classList.add('hidden');
-            document.getElementById('loading').classList.remove('hidden');
-
-            try {
-const response = await fetch('https://cognitive-therapy.onrender.com/analyze', { // 末尾のスラッシュは入れない
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ thought: userThought })
-});
-
-                if (!response.ok) throw new Error('サーバーでエラーが起きました');
-                
-                const data = await response.json();
-                displayResults(data);
-
-            } catch (error) {
-                alert("エラーが発生しました: " + error.message);
-                document.getElementById('input-section').classList.remove('hidden');
-                document.getElementById('loading').classList.add('hidden');
-            }
-        }
-
-        function displayResults(data) {
+        } catch (error) {
+            alert("エラーが発生しました: " + error.message);
+            document.getElementById('input-section').classList.remove('hidden');
             document.getElementById('loading').classList.add('hidden');
-            document.getElementById('result-section').classList.remove('hidden');
-
-            // データの安全な読み込み
-            const res = (typeof data === 'string') ? JSON.parse(data) : data;
-
-            // 1. 認知の歪み
-            const distList = document.getElementById('distortion-list');
-            distList.innerHTML = '';
-            (res.distortions || ["なし"]).forEach(d => {
-                const span = document.createElement('span');
-                span.className = 'distortion-tag';
-                span.innerText = d;
-                distList.appendChild(span);
-            });
-
-            // 2. 反論
-            document.getElementById('refutation-text').innerText = res.refutation || '新しい視点が見つかりませんでした';
-
-            // 3. メリット
-            document.getElementById('benefit-text').innerText = res.benefit || '-';
-
-            // 4. アクション
-            const actionList = document.getElementById('action-list');
-            actionList.innerHTML = '';
-            (res.actions || []).forEach(a => {
-                const li = document.createElement('li');
-                li.innerText = a;
-                actionList.appendChild(li);
-            });
         }
-    </script>
-</body>
-</html>
+    }
+
+    function displayResults(data) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('result-section').classList.remove('hidden');
+
+        // データの安全な読み込み
+        const res = (typeof data === 'string') ? JSON.parse(data) : data;
+
+        // 1. 認知の歪み
+        const distList = document.getElementById('distortion-list');
+        distList.innerHTML = '';
+        (res.distortions || ["なし"]).forEach(d => {
+            const span = document.createElement('span');
+            span.className = 'distortion-tag';
+            span.innerText = d;
+            distList.appendChild(span);
+        });
+
+        // 2. 反論
+        document.getElementById('refutation-text').innerText = res.refutation || '新しい視点が見つかりませんでした';
+
+        // 3. メリット
+        document.getElementById('benefit-text').innerText = res.benefit || '-';
+
+        // 4. アクション
+        const actionList = document.getElementById('action-list');
+        actionList.innerHTML = '';
+        (res.actions || []).forEach(a => {
+            const li = document.createElement('li');
+            li.innerText = a;
+            actionList.appendChild(li);
+        });
+    }
+</script>
