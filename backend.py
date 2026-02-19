@@ -23,10 +23,10 @@ SYSTEM_PROMPT = load_system_prompt()
 
 # 関数名をエンドポイントパスと違う名前に変更して競合を避ける
 @app.route('/analyze', methods=['POST', 'OPTIONS'], strict_slashes=False)
+@app.route('/analyze/', methods=['POST', 'OPTIONS'], strict_slashes=False)
 def analyze_endpoint():
     if request.method == 'OPTIONS':
         return '', 200
-
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
