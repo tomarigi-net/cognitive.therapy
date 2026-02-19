@@ -9,7 +9,7 @@ CORS(app) # フロントエンドからの通信を許可
 
 # 1. APIキーの設定
 # ローカルでテストする際は "YOUR_KEY" に書き換えるか、環境変数に設定してください
-api_key = os.environ.get("AIzaSyC5azZDgFDL5bBOChtwdMGrXrNNQuraBPg")
+api_key = os.environ.get("GEMINI_API_KEY" , "AIzaSyC5azZDgFDL5bBOChtwdMGrXrNNQuraBPg")
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
