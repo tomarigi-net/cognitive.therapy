@@ -18,7 +18,7 @@ if not api_key:
 else:
     genai.configure(api_key=api_key)
 
-model = genai.GenerativeModel('gemini-1.5-flash') # シンプルな名前に戻す
+model = genai.GenerativeModel('gemini-pro') # シンプルな名前に戻す
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
