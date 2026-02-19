@@ -5,29 +5,29 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-# CORSを全てのオリジンに対して許可
+# 最もシンプルなCORS設定
 CORS(app)
 
-# 1. プロンプト読み込み関数
-def load_prompt_from_file(filename="prompt.txt"):
-    if os.path.exists(filename):
+# 1. プロンプト（ファイルがなければデフォルトを使用）
+def load_prompt():
+    path = "prompt.txt"
+    if os.path.exists(path):
         try:
-            with open(filename, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return f.read().strip()
-        except Exception as e:
-            print(f"DEBUG: prompt reading error: {e}")
-    return "あなたは優秀なカウンセラーです。JSON形式で回答してください。"
+        except:
+            pass
+    return "あなたは優秀なCBTカウンセラーです。必ずJSON形式で回答してください。"
 
-SYSTEM_PROMPT = load_prompt_from_file()
+SYSTEM_PROMPT = load_prompt()
 
-# 2. Gemini APIの設定（最新の安定したURL）
+# 2. Gemini APIの設定（v1 安定版に固定）
 API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-
-BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+BASE_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    data = request.json
+    data = request.get_json()
     if not data:
         return jsonify({"error": "No data received"}), 400
 
@@ -40,6 +40,7 @@ def analyze():
     }
 
     try:
+        # API呼び出し
         response = requests.post(
             BASE_URL, 
             params={"key": API_KEY}, 
@@ -47,24 +48,26 @@ def analyze():
             timeout=15
         )
         
+        # Googleからのエラーをチェック
         if response.status_code != 200:
-            return jsonify({"error": "Gemini API Error", "detail": response.text}), response.status_code
+            print(f"API Error: {response.text}")
+            return jsonify({"error": "API Error", "detail": response.text}), response.status_code
 
-        response_data = response.json()
-        ai_response_text = response_data['candidates'][0]['content']['parts'][0]['text']
+        res_json = response.json()
+        ai_text = res_json['candidates'][0]['content']['parts'][0]['text']
         
-        # JSONの余計な装飾を削除
-        clean_json = ai_response_text.strip().replace('```json', '').replace('```', '')
+        # 不要な文字を削ってJSONとして返す
+        clean_json = ai_text.strip().replace('```json', '').replace('```', '')
         return jsonify(json.loads(clean_json))
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Server Error: {str(e)}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route('/')
 def home():
-    return "CBT Backend is active."
+    return "CBT Backend Status: Online"
 
 if __name__ == '__main__':
-    # ローカル実行用
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
