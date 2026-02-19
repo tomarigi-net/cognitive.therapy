@@ -5,70 +5,47 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-# 最もシンプルなCORS設定
-CORS(app)
 
-# 1. プロンプト（ファイルがなければデフォルトを使用）
-def load_prompt():
-    path = "prompt.txt"
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return f.read().strip()
-        except:
-            pass
-    return "あなたは優秀なCBTカウンセラーです。必ずJSON形式で回答してください。"
+# CORS設定を「全てのパスとメソッド」に対して完全に開放します
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-SYSTEM_PROMPT = load_prompt()
-
-# 2. Gemini APIの設定（v1 安定版に固定）
-API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-# --- backend.py の該当箇所を上書き ---
-
-BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-
+@app.route('/analyze', methods=['POST', 'OPTIONS'], strict_slashes=False)
 def analyze():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No data received"}), 400
+    # プリフライト（OPTIONS）リクエストが来たら、即座に200 OKを返す
+    if request.method == 'OPTIONS':
+        return '', 200
 
+    data = request.get_json()
     user_thought = data.get('thought', '')
     
+    # --- Gemini APIの設定 ---
+    API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+    # 成功率が最も高い「v1」かつ「gemini-1.5-flash」の組み合わせ
+    BASE_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
+
     payload = {
-        "contents": [{
-            "parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}"}]
-        }]
+        "contents": [{"parts": [{"text": f"あなたはCBTカウンセラーです。JSON形式で回答して。入力: {user_thought}"}]}]
     }
 
     try:
-        # API呼び出し
-        response = requests.post(
-            BASE_URL, 
-            params={"key": API_KEY}, 
-            json=payload, 
-            timeout=15
-        )
+        response = requests.post(BASE_URL, params={"key": API_KEY}, json=payload, timeout=15)
         
-        # Googleからのエラーをチェック
         if response.status_code != 200:
-            print(f"API Error: {response.text}")
-            return jsonify({"error": "API Error", "detail": response.text}), response.status_code
+            return jsonify({"error": "Gemini API Error", "detail": response.text}), response.status_code
 
         res_json = response.json()
         ai_text = res_json['candidates'][0]['content']['parts'][0]['text']
-        
-        # 不要な文字を削ってJSONとして返す
         clean_json = ai_text.strip().replace('```json', '').replace('```', '')
+        
         return jsonify(json.loads(clean_json))
 
     except Exception as e:
-        print(f"Server Error: {str(e)}")
-        return jsonify({"error": "Internal Server Error"}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/')
 def home():
-    return "CBT Backend Status: Online"
+    return "CBT Backend Online"
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
