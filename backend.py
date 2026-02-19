@@ -7,8 +7,8 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# 起動時に一度だけ読み込む（エラーが出ないようtry-exceptで囲む）
-def load_prompt():
+# prompt.txt読み込み関数
+def get_prompt():
     try:
         path = os.path.join(os.path.dirname(__file__), "prompt.txt")
         if os.path.exists(path):
@@ -18,17 +18,19 @@ def load_prompt():
         pass
     return "あなたは優秀なCBTカウンセラーです。JSON形式で回答してください。"
 
-SYSTEM_PROMPT = load_prompt()
+SYSTEM_PROMPT = get_prompt()
 
-@app.route('/')
+# POST と OPTIONS を明示的に許可します
+@app.route('/', methods=['GET', 'POST', 'OPTIONS'])
 def home():
-    return "CBT Backend is Online"
-
-@app.route('/analyze', methods=['POST', 'OPTIONS'])
-def analyze():
     if request.method == 'OPTIONS':
         return '', 200
+    
+    # GETリクエストなら生存確認メッセージを返す
+    if request.method == 'GET':
+        return "CBT Backend is Online"
 
+    # POSTリクエストならAI分析を実行する
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
@@ -42,7 +44,7 @@ def analyze():
             }]
         }
 
-        response = requests.post(url, params={"key": api_key}, json=payload, timeout=20)
+        response = requests.post(url, params={"key": api_key}, json=payload, timeout=25)
         
         if response.status_code != 200:
             return jsonify({"error": "Gemini API Error"}), response.status_code
@@ -58,6 +60,5 @@ def analyze():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    # Renderの要求する 0.0.0.0 と PORT に合わせる
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
