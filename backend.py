@@ -59,5 +59,9 @@ def home():
     return "CBT Backend is running (Fixed JSON Mode)!"
 
 if __name__ == '__main__':
+    # Renderは環境変数 PORT を指定してくるので、それを読み込む
+    # 指定がない場合は 5000番（ローカルテスト用）を使う
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    
+    # host="0.0.0.0" にすることで、Renderの外部からアクセス可能になる
+    app.run(host="0.0.0.0", port=port)
