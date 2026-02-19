@@ -21,7 +21,7 @@ SYSTEM_PROMPT = load_prompt_from_file()
 API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 # URLのバージョンを v1beta に変えてみる（一部環境で v1 が 404 になるケースがあるため）
 
-BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-
+BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
 
 @app.route('/analyze', methods=['POST', 'OPTIONS'], strict_slashes=False)
 def analyze():
