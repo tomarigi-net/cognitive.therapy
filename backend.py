@@ -1,42 +1,42 @@
 import os
-import json
 import requests
+import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
+# どんなリクエストも通す設定
+CORS(app)
 
-# CORS設定を「全てのパスとメソッド」に対して完全に開放します
-CORS(app, resources={r"/*": {"origins": "*"}})
-
-@app.route('/analyze', methods=['POST', 'OPTIONS'], strict_slashes=False)
+@app.route('/analyze', methods=['POST', 'OPTIONS'])
 def analyze():
-    # プリフライト（OPTIONS）リクエストが来たら、即座に200 OKを返す
+    # プリフライト対応
     if request.method == 'OPTIONS':
         return '', 200
 
-    data = request.get_json()
-    user_thought = data.get('thought', '')
-    
-    # --- Gemini APIの設定 ---
-    API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-    # 成功率が最も高い「v1」かつ「gemini-1.5-flash」の組み合わせ
-    BASE_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
-
-    payload = {
-        "contents": [{"parts": [{"text": f"あなたはCBTカウンセラーです。JSON形式で回答して。入力: {user_thought}"}]}]
-    }
-
     try:
-        response = requests.post(BASE_URL, params={"key": API_KEY}, json=payload, timeout=15)
+        data = request.get_json()
+        thought = data.get('thought', '')
         
-        if response.status_code != 200:
-            return jsonify({"error": "Gemini API Error", "detail": response.text}), response.status_code
+        # APIキーとURL
+        key = os.environ.get("GEMINI_API_KEY", "").strip()
+        # 今回は「v1」に戻します（404対策）
+        url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
 
-        res_json = response.json()
-        ai_text = res_json['candidates'][0]['content']['parts'][0]['text']
-        clean_json = ai_text.strip().replace('```json', '').replace('```', '')
+        payload = {
+            "contents": [{"parts": [{"text": f"あなたはCBTカウンセラーです。以下の思考を分析し、認知の歪み、反論、メリット、アクションをJSONで返して。： {thought}"}]}]
+        }
+
+        res = requests.post(url, params={"key": key}, json=payload, timeout=15)
         
+        if res.status_code != 200:
+            return jsonify({"error": "API Error", "detail": res.text}), res.status_code
+
+        ai_data = res.json()
+        raw_text = ai_data['candidates'][0]['content']['parts'][0]['text']
+        
+        # JSON部分だけを抽出
+        clean_json = raw_text.strip().replace('```json', '').replace('```', '')
         return jsonify(json.loads(clean_json))
 
     except Exception as e:
@@ -44,7 +44,7 @@ def analyze():
 
 @app.route('/')
 def home():
-    return "CBT Backend Online"
+    return "OK"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
