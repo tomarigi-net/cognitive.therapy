@@ -29,7 +29,8 @@ SYSTEM_PROMPT = load_prompt_from_file()
 # --- 2. Gemini APIの設定 ---
 API_KEY = os.environ.get("GEMINI_API_KEY")
 # 安定版 v1 を使用
-GEMINI_URL = f"[https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=){API_KEY}"
+API_KEY = os.environ.get("GEMINI_API_KEY", "").strip() # strip()で空白を除去
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
