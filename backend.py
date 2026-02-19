@@ -3,10 +3,9 @@ import json
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
 app = Flask(__name__)
-CORS(app)
-
+# どんなサイトからのアクセスも、どんなデータ形式もすべて許可する設定
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 API_KEY = os.environ.get("GEMINI_API_KEY")
 # v1betaではなく安定版の v1 を使用
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
