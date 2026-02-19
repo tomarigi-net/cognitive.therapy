@@ -1,34 +1,36 @@
-import os
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
-import json
+import config  # config.py から設定を読み込む
 
-app = Flask(__name__)
-# CORS設定をさらに広げます
-CORS(app, resources={r"/*": {"origins": "*"}})
+def generate_ai_response(user_input):
+    """
+    ユーザーの入力に対して、システムプロンプトを適用して回答を生成する関数
+    """
+    
+    # 1. config.py からシステムプロンプトを取得
+    # 万が一設定が空だった場合のガードも入れています
+    sys_msg = getattr(config, "SYSTEM_PROMPT", "あなたは親切なアシスタントです。")
 
-API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # 2. AIに送るメッセージリストを作成
+    # 役割（role）を分けることで、AIに「指示」と「質問」を区別させます
+    messages = [
+        {"role": "system", "content": sys_msg},
+        {"role": "user", "content": user_input}
+    ]
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    # (中身のロジックは以前と同じでOKです)
-    data = request.json
-    user_thought = data.get('thought', '')
-    payload = {"contents": [{"parts": [{"text": f"JSONで分析して: {user_thought}"}]}]}
+    # --- ここから実際のAI処理（例：疑似的なレスポンス生成） ---
     try:
-        response = requests.post(GEMINI_URL, json=payload)
-        return jsonify(response.json())
+        # 本来はここで OpenAI や Google Gemini の API を呼び出します
+        # 例: response = client.chat.completions.create(model="...", messages=messages)
+        
+        # デバッグ用に現在の指示内容を表示
+        print(f"--- [System Prompt Applied] ---\n{messages[0]['content']}")
+        
+        # 擬似的な返却処理
+        return f"「{user_input}」について、システム指示に従って回答を生成しました。"
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return f"エラーが発生しました: {str(e)}"
 
-@app.route('/')
-def home():
-    return "CBT Backend is running!"
-
-# Render用のポート起動設定
-if __name__ == '__main__':
-    # 0.0.0.0 と PORT の組み合わせが必須です
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+# 動作確認用
+if __name__ == "__main__":
+    test_input = "AIを活用するメリットを教えてください。"
+    print(generate_ai_response(test_input))
