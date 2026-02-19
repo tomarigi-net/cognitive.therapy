@@ -9,19 +9,20 @@ CORS(app)
 
 def get_prompt():
     try:
-        path = os.path.join(os.path.dirname(__file__), "prompt.txt")
+        # prompt.txt のパスを安全に取得
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(base_dir, "prompt.txt")
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 return f.read().strip()
-    except:
-        pass
-    return "あなたは優秀なCBTカウンセラーです。JSON形式で回答してください。"
+    except Exception as e:
+        print(f"Prompt loading error: {e}")
+    return "あなたは優秀なCBTカウンセラーです。必ずJSON形式で回答してください。"
 
 SYSTEM_PROMPT = get_prompt()
 
-# スラッシュあり・なしの両方を定義して404を物理的に防ぐ
+# ルートは '/' だけに絞り、POSTとGETを両方許可します
 @app.route('/', methods=['GET', 'POST', 'OPTIONS'], strict_slashes=False)
-@app.route('', methods=['POST', 'OPTIONS'], strict_slashes=False)
 def home():
     if request.method == 'OPTIONS':
         return '', 200
@@ -29,7 +30,7 @@ def home():
     if request.method == 'GET':
         return "CBT Backend is Online"
 
-    # POST処理
+    # POST処理（ここが分析の本体）
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
@@ -44,7 +45,7 @@ def home():
         response = requests.post(url, params={"key": api_key}, json=payload, timeout=25)
         
         if response.status_code != 200:
-            return jsonify({"error": "Gemini API Error"}), response.status_code
+            return jsonify({"error": "Gemini API Error", "detail": response.text}), response.status_code
 
         result = response.json()
         ai_text = result['candidates'][0]['content']['parts'][0]['text']
