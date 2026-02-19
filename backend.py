@@ -82,5 +82,6 @@ def not_found(e):
     return jsonify({"error": "Path Not Found", "requested_path": request.path}), 404
 
 if __name__ == '__main__':
+    # Renderは環境変数 PORT で 10000 などを指定してきます
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False)
