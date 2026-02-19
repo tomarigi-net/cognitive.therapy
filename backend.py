@@ -42,8 +42,10 @@ def analyze():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/')
-def home():
+# backend.py の該当箇所をこのように修正
+
+@app.route('/analyze', methods=['POST', 'OPTIONS'], strict_slashes=False)
+def analyze():
     return "OK"
 
 if __name__ == '__main__':
