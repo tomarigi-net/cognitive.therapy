@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 # 1. APIキーの設定
-api_key = os.environ.get("GEMINI_API_KEY")
+api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyBS84WGL-madX5658gdsz2WubkNACTStYU")
 
 # 2. 通信の設定（APIバージョンを正式版 v1 に固定する）
 # これにより、エラーの原因である v1beta を回避します
