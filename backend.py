@@ -8,11 +8,14 @@ app = Flask(__name__)
 CORS(app)
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
+# v1betaではなく安定版の v1 を使用
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 SYSTEM_PROMPT = """
 あなたは優秀な認知行動療法（CBT）のカウンセラーです。
-ユーザーの思考を分析し、以下のJSON形式でのみ回答してください。余計な文章は一切不要です。
+ユーザーの思考を分析し、必ず以下のJSON形式でのみ回答してください。
+解説や挨拶、```json などの装飾は一切含めず、{ } の中身だけを出力してください。
+
 {
   "distortions": ["歪み1", "歪み2"],
   "refutation": "優しい反論...",
@@ -26,14 +29,11 @@ def analyze():
     data = request.json
     user_thought = data.get('thought', '')
 
-    # 修正ポイント：responseMimeType に変更
+    # エラーの原因だった generationConfig を削除し、シンプルに
     payload = {
         "contents": [{
             "parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}"}]
-        }],
-        "generationConfig": {
-            "responseMimeType": "application/json"
-        }
+        }]
     }
 
     try:
@@ -41,14 +41,15 @@ def analyze():
         response_data = response.json()
 
         if response.status_code != 200:
-            print(f"Google API Error Detail: {response_data}")
             return jsonify({"error": response_data.get('error', {}).get('message', 'API Error')}), response.status_code
 
-        # AIの回答（JSON文字列）を取り出す
+        # AIの回答テキストを取得
         ai_response_text = response_data['candidates'][0]['content']['parts'][0]['text']
         
-        # JSONとして解析してフロントに返す
-        return jsonify(json.loads(ai_response_text))
+        # ```json などの余計な装飾を削ぎ落とす処理
+        clean_json = ai_response_text.strip().replace('```json', '').replace('```', '')
+        
+        return jsonify(json.loads(clean_json))
 
     except Exception as e:
         print(f"Serious Error Detail: {e}")
@@ -56,12 +57,8 @@ def analyze():
 
 @app.route('/')
 def home():
-    return "CBT Backend is running (Fixed JSON Mode)!"
+    return "CBT Backend is running (Ultimate Mode)!"
 
 if __name__ == '__main__':
-    # Renderは環境変数 PORT を指定してくるので、それを読み込む
-    # 指定がない場合は 5000番（ローカルテスト用）を使う
     port = int(os.environ.get("PORT", 5000))
-    
-    # host="0.0.0.0" にすることで、Renderの外部からアクセス可能になる
-    app.run(host="0.0.0.0", port=port)
+    app.run(host='0.0.0.0', port=port)
