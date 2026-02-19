@@ -4,48 +4,38 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+# インスタンス名は必ず 'app'
 app = Flask(__name__)
-# すべてのオリジンからのアクセスを完全に許可
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
-# --- prompt.txt の読み込み ---
 def load_system_prompt():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_path = os.path.join(base_dir, "prompt.txt")
-    
     if os.path.exists(prompt_path):
         try:
             with open(prompt_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                if content:
-                    return content
-        except Exception as e:
-            print(f"Error reading prompt.txt: {e}")
-    return "あなたは優秀なCBTカウンセラーです。JSON形式で回答してください。"
+                return f.read().strip()
+        except:
+            pass
+    return "あなたは優秀なCBTカウンセラーです。JSONで回答してください。"
 
 SYSTEM_PROMPT = load_system_prompt()
 
-# strict_slashes=False を追加して 404 を防ぐ
+# 関数名をエンドポイントパスと違う名前に変更して競合を避ける
 @app.route('/analyze', methods=['POST', 'OPTIONS'], strict_slashes=False)
-def analyze():
+def analyze_endpoint():
     if request.method == 'OPTIONS':
         return '', 200
 
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    # 安定版の v1beta を使用
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
     try:
         req_data = request.get_json()
-        if not req_data:
-            return jsonify({"error": "No JSON data"}), 400
-            
         user_thought = req_data.get('thought', '')
         
         payload = {
-            "contents": [{
-                "parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}"}]
-            }]
+            "contents": [{"parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザー思考: {user_thought}"}]}]
         }
 
         response = requests.post(url, params={"key": api_key}, json=payload, timeout=30)
@@ -53,10 +43,7 @@ def analyze():
         if response.status_code != 200:
             return jsonify({"error": "Gemini API Error", "detail": response.text}), response.status_code
 
-        data = response.json()
-        ai_text = data['candidates'][0]['content']['parts'][0]['text']
-        
-        # Markdownの除去
+        ai_text = response.json()['candidates'][0]['content']['parts'][0]['text']
         clean_json = ai_text.strip().replace('```json', '').replace('```', '')
         return jsonify(json.loads(clean_json))
 
@@ -64,8 +51,8 @@ def analyze():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/')
-def home():
-    return "CBT Backend is Online (v1.1)"
+def health_check():
+    return "OK"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))

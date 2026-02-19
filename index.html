@@ -97,11 +97,13 @@
             document.getElementById('loading').classList.remove('hidden');
 
             try {
-                const response = await fetch('https://cognitive-therapy.onrender.com/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ thought: thought, belief: belief })
-                });
+const response = await fetch('https://cognitive-therapy.onrender.com/analyze', { // 末尾のスラッシュは入れない
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ thought: userThought })
+});
 
                 if (!response.ok) throw new Error('サーバーでエラーが起きました');
                 
