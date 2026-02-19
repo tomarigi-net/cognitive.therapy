@@ -13,7 +13,7 @@ genai.configure(api_key=api_key)
 
 # 修正ポイント：モデル名を最も標準的なものに固定
 # これにより API v1beta ではなく v1 が使われるようになります
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro')
 
 SYSTEM_PROMPT = """
 あなたは優秀な認知行動療法（CBT）のカウンセラーです。
