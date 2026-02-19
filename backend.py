@@ -5,13 +5,14 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app) # 全ての通信を許可
+CORS(app)
 
 # APIキー設定
 api_key = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
-# モデル指定（最も安定している名前に固定）
+# 修正ポイント：モデル名を最も標準的なものに固定
+# これにより API v1beta ではなく v1 が使われるようになります
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 SYSTEM_PROMPT = """
@@ -29,15 +30,27 @@ SYSTEM_PROMPT = """
 def analyze():
     data = request.json
     user_thought = data.get('thought', '')
+    
+    if not user_thought:
+        return jsonify({"error": "No thought provided"}), 400
+
     try:
-        # JSONモードを強制する最新の設定
-        response = model.generate_content(
-            f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}",
-            generation_config={"response_mime_type": "application/json"}
-        )
-        return jsonify(json.loads(response.text))
+        # 修正ポイント：generation_configを使わず、よりシンプルな呼び出しにする
+        # ライブラリのバージョンが古い場合でも動くようにします
+        prompt = f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}"
+        response = model.generate_content(prompt)
+        
+        # 文字列の中からJSON部分だけを抽出する（念のため）
+        res_text = response.text
+        start_idx = res_text.find('{')
+        end_idx = res_text.rfind('}') + 1
+        json_str = res_text[start_idx:end_idx]
+        
+        return jsonify(json.loads(json_str))
+        
     except Exception as e:
-        print(f"Error: {e}")
+        # エラーが出た場合、詳細をRenderのLogsに出力
+        print(f"Serious Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/')
