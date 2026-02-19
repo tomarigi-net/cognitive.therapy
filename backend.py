@@ -24,7 +24,7 @@ API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 # URLにはキーを含めず、ベースのURLのみを記述
 BASE_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
 
-@app.route('/analyze', methods=['POST'])
+@app.route('/analyze', methods=['POST'], strict_slashes=False)
 def analyze():
     data = request.json
     user_thought = data.get('thought', '')
