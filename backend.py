@@ -29,28 +29,28 @@ def analyze():
     data = request.json
     user_thought = data.get('thought', '')
 
-    # 直接Google APIへ送るデータを作成
+    # 修正ポイント：response_mime_type を responseMimeType に変更
     payload = {
         "contents": [{
             "parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}"}]
         }],
         "generationConfig": {
-            "response_mime_type": "application/json"
+            "responseMimeType": "application/json"
         }
     }
 
     try:
-        # 直接POSTリクエストを送信
         response = requests.post(GEMINI_URL, json=payload)
         response_data = response.json()
 
-        # エラーチェック
         if response.status_code != 200:
-            print(f"Google API Error: {response_data}")
+            # ここでエラーが出た場合、詳細をログに出す
+            print(f"Google API Error Detail: {response_data}")
             return jsonify({"error": response_data.get('error', {}).get('message', 'API Error')}), response.status_code
 
-        # AIの回答（JSON文字列）を取り出す
         ai_response_text = response_data['candidates'][0]['content']['parts'][0]['text']
+        
+        # AIの返答をJSONとして解析してフロントに返す
         return jsonify(json.loads(ai_response_text))
 
     except Exception as e:
