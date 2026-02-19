@@ -107,7 +107,11 @@
         }
 
         function simulateAIAnalysis() {
-            async function analyzeThought() {
+            const thought = document.getElementById('thought').value;
+            // 本来はここでAPIからデータを取得
+           
+
+async function analyzeThought() {
     const thoughtText = document.getElementById('thought').value;
     if (!thoughtText) return alert("まずは気持ちを書き出してみましょう。");
 
@@ -116,10 +120,11 @@
 
     try {
         // Pythonサーバー(Flask)にデータを送る
-
-
-
-        const response = await fetch('https://cognitive-therapy.onrender.com/analyze', { ... });
+const response = await fetch('https://cognitive-therapy.onrender.com/analyze',{
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ thought: thoughtText })
+        });
 
         const data = await response.json();
 
@@ -154,6 +159,8 @@
         alert("サーバーとの通信に失敗しました。Pythonプログラムが動いているか確認してください。");
     }
 }
+
+
         }
     </script>
 </body>
