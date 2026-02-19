@@ -4,9 +4,9 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# インスタンス名は必ず 'app'
 app = Flask(__name__)
-CORS(app)
+# どんなアクセスも許可
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 def load_system_prompt():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,38 +21,41 @@ def load_system_prompt():
 
 SYSTEM_PROMPT = load_system_prompt()
 
-# 関数名をエンドポイントパスと違う名前に変更して競合を避ける
-@app.route('/analyze', methods=['POST', 'OPTIONS'], strict_slashes=False)
-@app.route('/analyze/', methods=['POST', 'OPTIONS'], strict_slashes=False)
-def analyze_endpoint():
+# あらゆるパス (/) を受け入れるように設定
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'OPTIONS'])
+def catch_all(path):
+    # CORS対応
     if request.method == 'OPTIONS':
         return '', 200
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
-    try:
-        req_data = request.get_json()
-        user_thought = req_data.get('thought', '')
-        
-        payload = {
-            "contents": [{"parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザー思考: {user_thought}"}]}]
-        }
+    # POSTリクエスト かつ パスが analyze の場合のみ実行
+    if request.method == 'POST' and 'analyze' in path:
+        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
-        response = requests.post(url, params={"key": api_key}, json=payload, timeout=30)
-        
-        if response.status_code != 200:
-            return jsonify({"error": "Gemini API Error", "detail": response.text}), response.status_code
+        try:
+            req_data = request.get_json()
+            user_thought = req_data.get('thought', '')
+            
+            payload = {
+                "contents": [{"parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザー思考: {user_thought}"}]}]
+            }
 
-        ai_text = response.json()['candidates'][0]['content']['parts'][0]['text']
-        clean_json = ai_text.strip().replace('```json', '').replace('```', '')
-        return jsonify(json.loads(clean_json))
+            response = requests.post(url, params={"key": api_key}, json=payload, timeout=30)
+            
+            if response.status_code != 200:
+                return jsonify({"error": "Gemini API Error", "detail": response.text}), response.status_code
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            ai_text = response.json()['candidates'][0]['content']['parts'][0]['text']
+            clean_json = ai_text.strip().replace('```json', '').replace('```', '')
+            return jsonify(json.loads(clean_json))
 
-@app.route('/')
-def health_check():
-    return "OK"
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    # それ以外（トップページなど）へのアクセス
+    return "CBT Backend is Online"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
