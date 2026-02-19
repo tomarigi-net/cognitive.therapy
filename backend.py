@@ -1,36 +1,40 @@
-import config  # config.py から設定を読み込む
+from flask import Flask, request, jsonify
+import config  # 先ほど作成した config.py を読み込む
 
-def generate_ai_response(user_input):
-    """
-    ユーザーの入力に対して、システムプロンプトを適用して回答を生成する関数
-    """
-    
-    # 1. config.py からシステムプロンプトを取得
-    # 万が一設定が空だった場合のガードも入れています
-    sys_msg = getattr(config, "SYSTEM_PROMPT", "あなたは親切なアシスタントです。")
+# --- Gunicornが探している 'app' インスタンスを定義 ---
+app = Flask(__name__)
 
-    # 2. AIに送るメッセージリストを作成
-    # 役割（role）を分けることで、AIに「指示」と「質問」を区別させます
+# config.py からシステムプロンプトを取得
+# 万が一設定がない場合はデフォルトの文言を使用
+SYSTEM_PROMPT = getattr(config, "SYSTEM_PROMPT", "あなたは親切なアシスタントです。")
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    """
+    フロントエンドからの質問を受け取るエンドポイント
+    """
+    data = request.json
+    user_message = data.get("message", "")
+
+    # メッセージリストの構築
     messages = [
-        {"role": "system", "content": sys_msg},
-        {"role": "user", "content": user_input}
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_message}
     ]
 
-    # --- ここから実際のAI処理（例：疑似的なレスポンス生成） ---
     try:
-        # 本来はここで OpenAI や Google Gemini の API を呼び出します
-        # 例: response = client.chat.completions.create(model="...", messages=messages)
+        # ここに実際のAI API (OpenAIやGemini) の呼び出し処理を書きます
+        # 現時点では、正しくプロンプトが組み込まれたことを確認するレスポンスを返します
+        response_text = f"システムプロンプト「{SYSTEM_PROMPT[:20]}...」を適用して、回答を生成しました。"
         
-        # デバッグ用に現在の指示内容を表示
-        print(f"--- [System Prompt Applied] ---\n{messages[0]['content']}")
-        
-        # 擬似的な返却処理
-        return f"「{user_input}」について、システム指示に従って回答を生成しました。"
+        return jsonify({
+            "status": "success",
+            "reply": response_text
+        })
 
     except Exception as e:
-        return f"エラーが発生しました: {str(e)}"
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-# 動作確認用
+# 開発環境で直接実行する場合（python backend.py）
 if __name__ == "__main__":
-    test_input = "AIを活用するメリットを教えてください。"
-    print(generate_ai_response(test_input))
+    app.run(host='0.0.0.0', port=5000)
