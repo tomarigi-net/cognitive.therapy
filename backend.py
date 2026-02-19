@@ -1,16 +1,13 @@
 import os
 import json
-import requests  # 直接通信のために必要
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
-# RenderのEnvironmentから取得
 API_KEY = os.environ.get("GEMINI_API_KEY")
-
-# 修正ポイント：ライブラリを介さず、正式版(v1)のURLを直接指定
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 SYSTEM_PROMPT = """
@@ -29,7 +26,7 @@ def analyze():
     data = request.json
     user_thought = data.get('thought', '')
 
-    # 修正ポイント：response_mime_type を responseMimeType に変更
+    # 修正ポイント：responseMimeType に変更
     payload = {
         "contents": [{
             "parts": [{"text": f"{SYSTEM_PROMPT}\n\nユーザーの思考: {user_thought}"}]
@@ -44,13 +41,13 @@ def analyze():
         response_data = response.json()
 
         if response.status_code != 200:
-            # ここでエラーが出た場合、詳細をログに出す
             print(f"Google API Error Detail: {response_data}")
             return jsonify({"error": response_data.get('error', {}).get('message', 'API Error')}), response.status_code
 
+        # AIの回答（JSON文字列）を取り出す
         ai_response_text = response_data['candidates'][0]['content']['parts'][0]['text']
         
-        # AIの返答をJSONとして解析してフロントに返す
+        # JSONとして解析してフロントに返す
         return jsonify(json.loads(ai_response_text))
 
     except Exception as e:
@@ -59,7 +56,7 @@ def analyze():
 
 @app.route('/')
 def home():
-    return "CBT Backend is running (Direct Mode)!"
+    return "CBT Backend is running (Fixed JSON Mode)!"
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
