@@ -9,7 +9,6 @@ CORS(app)
 
 def get_prompt():
     try:
-        # prompt.txt のパスを安全に取得
         base_dir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(base_dir, "prompt.txt")
         if os.path.exists(path):
@@ -21,7 +20,6 @@ def get_prompt():
 
 SYSTEM_PROMPT = get_prompt()
 
-# ルートは '/' だけに絞り、POSTとGETを両方許可します
 @app.route('/', methods=['GET', 'POST', 'OPTIONS'], strict_slashes=False)
 def home():
     if request.method == 'OPTIONS':
@@ -30,9 +28,11 @@ def home():
     if request.method == 'GET':
         return "CBT Backend is Online"
 
-    # POST処理（ここが分析の本体）
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"    try:
+    # モデル名を最も確実に動作する 'gemini-1.5-flash' に固定します
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+
+    try:
         data = request.get_json()
         thought = data.get('thought', '入力なし')
 
@@ -48,7 +48,7 @@ def home():
         result = response.json()
         ai_text = result['candidates'][0]['content']['parts'][0]['text']
         
-        # JSONのクリーニング
+        # Markdownの除去
         clean_json = ai_text.replace('```json', '').replace('```', '').strip()
         return jsonify(json.loads(clean_json))
 
