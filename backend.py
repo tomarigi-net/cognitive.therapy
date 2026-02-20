@@ -57,5 +57,7 @@ def home():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    # Renderは環境変数 PORT を指定してくるので、それに従いつつ
+    # 0.0.0.0 (外部からの接続許可) で起動します
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False)
