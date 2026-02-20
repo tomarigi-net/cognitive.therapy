@@ -29,9 +29,7 @@ def home():
         return "CBT Backend is Online"
 
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    # モデル名を最も確実に動作する 'gemini-1.5-flash' に固定します
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
     try:
         data = request.get_json()
         thought = data.get('thought', '入力なし')
