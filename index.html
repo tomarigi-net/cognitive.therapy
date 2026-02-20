@@ -87,6 +87,13 @@
     </div>
 
     <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Wake-up call sent to backend...');
+            fetch('https://cognitive-therapy.onrender.com/')
+                .then(response => console.log('Backend response received.'))
+                .catch(error => console.error('Wake-up failed (Normal if spinning up):', error));
+        });
+
         async function analyzeThought() {
             const thought = document.getElementById('user-thought').value;
             if (!thought) return alert('今の気持ちを入力してください');
