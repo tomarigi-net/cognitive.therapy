@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; connect-src 'self' https://cognitive-therapy.onrender.com;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ココロの整理 - CBTアシスタント</title>
@@ -93,22 +94,31 @@
             document.getElementById('input-section').classList.add('hidden');
             document.getElementById('loading').classList.remove('hidden');
 
-            try {
+try {
+    const response = await fetch('https://cognitive-therapy.onrender.com/', {
+        method: 'POST',
+        mode: 'cors', // CORSを明示
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ thought: thought })
+    });
 
-const response = await fetch('https://cognitive-therapy.onrender.com/', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ thought: thought })
-});
-                if (!response.ok) throw new Error('サーバーとの通信に失敗しました');
-                
-                const data = await response.json();
-                displayResults(data);
+    if (!response.ok) {
+        // 詳細なエラーをコンソールに出す
+        const errorDetail = await response.text();
+        console.error("Server Error Detail:", errorDetail);
+        throw new Error(`サーバーエラー (${response.status})`);
+    }
+    
+    const data = await response.json();
+    displayResults(data);
 
-            } catch (error) {
-                alert("エラーが発生しました: " + error.message);
+} catch (error) {
+    // ユーザーに詳細を少しだけ見せる
+    alert("エラーが発生しました: " + error.message + "\n(詳細はコンソールを確認してください)");
+
                 document.getElementById('input-section').classList.remove('hidden');
                 document.getElementById('loading').classList.add('hidden');
             }
