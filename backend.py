@@ -26,10 +26,13 @@ def home():
         return '', 200
     
     if request.method == 'GET':
-        return "CBT Backend is Online"
+        return "CBT Backend is Online (Gemini 3 Mode)"
 
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    
+    # 【最重要】スクリーンショットで確認した最新モデル名を指定
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent"
+
     try:
         data = request.get_json()
         thought = data.get('thought', '入力なし')
@@ -46,7 +49,7 @@ def home():
         result = response.json()
         ai_text = result['candidates'][0]['content']['parts'][0]['text']
         
-        # Markdownの除去
+        # Markdown（```json ... ```）を安全に除去
         clean_json = ai_text.replace('```json', '').replace('```', '').strip()
         return jsonify(json.loads(clean_json))
 
