@@ -32,7 +32,7 @@ def home():
 
     # POST処理（ここが分析の本体）
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
 
     try:
         data = request.get_json()
