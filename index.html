@@ -24,11 +24,25 @@
             border: 1px solid #fee2e2;
         }
         input[type=range] { font-size: 1.5rem; width: 100%; cursor: pointer; }
+        /* パスワード保護用のスタイル */
+        #password-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f0fdfa; z-index: 9999; display: flex;
+            align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body class="min-h-screen pb-12">
 
-    <div class="max-w-2xl mx-auto px-4 py-10">
+    <div id="password-overlay">
+        <div class="mint-card p-8 shadow-xl text-center space-y-4">
+            <h2 class="text-xl font-bold text-teal-800">パスワードが必要です</h2>
+            <input type="password" id="pass-input" class="w-full p-3 border border-teal-100 rounded-xl outline-none focus:ring-2 focus:ring-teal-400" placeholder="Password">
+            <button onclick="checkPassword()" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-xl transition">認証</button>
+        </div>
+    </div>
+
+    <div id="main-content" class="invisible max-w-2xl mx-auto px-4 py-10">
         <header class="text-center mb-10">
             <h1 class="text-3xl font-bold text-teal-800">ココロの整理</h1>
             <p class="text-teal-600 mt-2">あなたの思考を、少しだけ客観的に。</p>
@@ -87,6 +101,17 @@
     </div>
 
     <script>
+        // パスワードチェック関数
+        function checkPassword() {
+            const pass = document.getElementById('pass-input').value;
+            if (pass === "okok") {
+                document.getElementById('password-overlay').style.display = 'none';
+                document.getElementById('main-content').classList.remove('invisible');
+            } else {
+                alert("パスワードが違います。");
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             console.log('Wake-up call sent to backend...');
             fetch('https://cognitive-therapy.onrender.com/')
@@ -101,31 +126,28 @@
             document.getElementById('input-section').classList.add('hidden');
             document.getElementById('loading').classList.remove('hidden');
 
-try {
-    const response = await fetch('https://cognitive-therapy.onrender.com/', {
-        method: 'POST',
-        mode: 'cors', // CORSを明示
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ thought: thought })
-    });
+            try {
+                const response = await fetch('https://cognitive-therapy.onrender.com/', {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ thought: thought })
+                });
 
-    if (!response.ok) {
-        // 詳細なエラーをコンソールに出す
-        const errorDetail = await response.text();
-        console.error("Server Error Detail:", errorDetail);
-        throw new Error(`サーバーエラー (${response.status})`);
-    }
-    
-    const data = await response.json();
-    displayResults(data);
+                if (!response.ok) {
+                    const errorDetail = await response.text();
+                    console.error("Server Error Detail:", errorDetail);
+                    throw new Error(`サーバーエラー (${response.status})`);
+                }
+                
+                const data = await response.json();
+                displayResults(data);
 
-} catch (error) {
-    // ユーザーに詳細を少しだけ見せる
-    alert("エラーが発生しました: " + error.message + "\n(詳細はコンソールを確認してください)");
-
+            } catch (error) {
+                alert("エラーが発生しました: " + error.message + "\n(詳細はコンソールを確認してください)");
                 document.getElementById('input-section').classList.remove('hidden');
                 document.getElementById('loading').classList.add('hidden');
             }
@@ -137,7 +159,6 @@ try {
 
             const res = (typeof data === 'string') ? JSON.parse(data) : data;
 
-            // 1. 認知の歪み
             const distList = document.getElementById('distortion-list');
             distList.innerHTML = '';
             (res.distortions || ["なし"]).forEach(d => {
@@ -147,13 +168,9 @@ try {
                 distList.appendChild(span);
             });
 
-            // 2. 反論
             document.getElementById('refutation-text').innerText = res.refutation || '視点を変えるヒントが見つかりませんでした';
-
-            // 3. メリット
             document.getElementById('benefit-text').innerText = res.benefit || '-';
 
-            // 4. アクション
             const actionList = document.getElementById('action-list');
             actionList.innerHTML = '';
             (res.actions || []).forEach(a => {
